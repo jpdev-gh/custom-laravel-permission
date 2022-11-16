@@ -32,6 +32,7 @@ class CreatePermissionTables extends Migration
             $table->timestamps();
 
             // $table->unique(['name', 'guard_name']);
+            $table->unique(['name']);
         });
 
         Schema::create($tableNames['roles'], function (Blueprint $table) use ($teams, $columnNames) {
@@ -43,19 +44,21 @@ class CreatePermissionTables extends Migration
             $table->string('name');       // For MySQL 8.0 use string('name', 125);
             // $table->string('guard_name'); // For MySQL 8.0 use string('guard_name', 125);
             $table->timestamps();
-            // if ($teams || config('permission.testing')) {
-            //     $table->unique([$columnNames['team_foreign_key'], 'name', 'guard_name']);
-            // } else {
-            //     $table->unique(['name', 'guard_name']);
-            // }
+            if ($teams || config('permission.testing')) {
+                $table->unique([$columnNames['team_foreign_key'], 'name', 'guard_name']);
+            } else {
+                // $table->unique(['name', 'guard_name']);
+                $table->unique(['name']);
+            }
         });
 
         Schema::create($tableNames['model_has_permissions'], function (Blueprint $table) use ($tableNames, $columnNames, $teams) {
             $table->unsignedBigInteger(PermissionRegistrar::$pivotPermission);
 
             // $table->string('model_type');
-            // $table->unsignedBigInteger($columnNames['model_morph_key']);
+            $table->unsignedBigInteger($columnNames['model_morph_key']);
             // $table->index([$columnNames['model_morph_key'], 'model_type'], 'model_has_permissions_model_id_model_type_index');
+            $table->index([$columnNames['model_morph_key']], 'model_has_permissions_model_id_index');
 
             $table->foreign(PermissionRegistrar::$pivotPermission)
                 ->references('id') // permission id
@@ -68,8 +71,11 @@ class CreatePermissionTables extends Migration
                 $table->primary([$columnNames['team_foreign_key'], PermissionRegistrar::$pivotPermission, $columnNames['model_morph_key'], 'model_type'],
                     'model_has_permissions_permission_model_type_primary');
             } else {
-                $table->primary([PermissionRegistrar::$pivotPermission, $columnNames['model_morph_key'], 'model_type'],
-                    'model_has_permissions_permission_model_type_primary');
+                // $table->primary([PermissionRegistrar::$pivotPermission, $columnNames['model_morph_key'], 'model_type'],
+                //     'model_has_permissions_permission_model_type_primary');
+
+                $table->primary([PermissionRegistrar::$pivotPermission, $columnNames['model_morph_key']],
+                    'model_has_permissions_permission_primary');
             }
 
         });
